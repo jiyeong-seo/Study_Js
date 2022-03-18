@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h2>User List</h2>
+    <ul id="userList"></ul>
+    <script>
+      /* url로 응답 받은 데이터를 담은 프로미스 객체를 반환하는 함수*/
+      const fetchData = (url) =>
+        // ()를 사용하면 한줄로 화살표 함수 바디 정의하겠다는 의미
+        fetch(url).then((response) => response.json());
+
+      /* 프로미스를 반환하며 fetchAllData 를 반환하고 종료된다.  */
+      const fetchAllData = () => {
+        // fetch 는 비동기다 -> 프로미스 객체 반환.
+        // fetch 내부의 비동기 코드들은 WEB API로 빠진다.
+        // 네트워크 요청이 완료되면 -> 이벤트 루프가 then을 콜스텍에 올려준다.
+        // setTimeout의 콜백이 promise의 then 에 해당한다.
+        // users에 네트워크 요청 보냄
+        // 응답 옴
+        // response 오면 받아서 json 메서드 호출
+        // json 파싱 끝나고..?? 리턴해준 값을 then의 콜백의 인자로 넣어준다.
+        return fetchData("https://jsonplaceholder.typicode.com/users").then(
+          (users) => {
+            return fetchData("https://jsonplaceholder.typicode.com/todos").then(
+              // then 안에서 return 은 resolve를 의미한다.
+              (todos) => ({ todos, users })
+            );
+          }
+        );
+        // 배열로 전달된 프로미스들의 상태가 전부 바뀔 때
+        // 새로운 프로미스를 반환한다.
+        // 하나라도 reject 면 리턴된 프로미스도 reject 된다
+        // 반환한 프로미스의 상태는 all의 인자인 배열에 담긴 프로미스의 결과값에 따라 달라진다.
+        return Promise.all([fetchUsers, fetchTodos]);
+      };
+
+      const getInfo = () => {
+        fetchAllData().then((response) => {
+          const { users, todos } = response;
+          const [first] = users;
+
+          const { name: foo } = first;
+          console.log(foo);
+        });
+      };
+
+      getInfo();
+    </script>
+  </body>
+</html>
