@@ -1,15 +1,16 @@
 const button = document.getElementById("create-list-form__button");
 const input = document.getElementById("create-list-form__input");
 const form = document.getElementById("create-list-form");
-let todoList = [];
+let todos = localStorage.setItem("savedTodos", JSON.stringify([]));
+let savedTodos = JSON.parse(localStorage.getItem("savedTodos"));
 
 // 유니크한 id를 만드는 함수
-const createNextId = (todoList) => {
-  if (!todoList.length) {
+const createNextId = (savedTodos) => {
+  if (!savedTodos.length) {
     return 1;
   }
 
-  const idList = todoList.map((todo) => todo.id);
+  const idList = savedTodos.map((todo) => todo.id);
 
   let maxId = Math.max(...idList);
 
@@ -26,19 +27,17 @@ const removeTodos = (todoUlList) => {
 
 // input값이 추가될때마다 호출되어 브라우저에
 // todoList배열의 요소인 객체의 프로퍼티 값을 알맞게 출력하는 함수
-const printTodos = (todoList, todoUlList) => {
+const printTodos = (savedTodos, todoUlList) => {
   removeTodos(todoUlList);
 
-  todoList.forEach((todo) => {
-    createElement(todo, todoUlList, todoList);
+  savedTodos.forEach((todo) => {
+    createElement(todo, todoUlList, savedTodos);
   });
-
-  console.log(todoList);
 };
 
 // 인자로 받은 값을 객체의 text 프로퍼티 값으로 받는 함수
-const insertInputValue = (value, todoList, todoUlList) => {
-  let todoId = createNextId(todoList);
+const insertInputValue = (value, todoUlList, savedTodos) => {
+  let todoId = createNextId(savedTodos);
 
   const todo = {
     text: value,
@@ -46,18 +45,20 @@ const insertInputValue = (value, todoList, todoUlList) => {
     id: todoId,
   };
 
-  todoList.push(todo);
+  savedTodos.push(todo);
 
-  printTodos(todoList, todoUlList);
+  localStorage.setItem("savedTodos", JSON.stringify(savedTodos));
+
+  printTodos(savedTodos, todoUlList);
 };
 
 // 추가 버튼 클릭시 인풋값을 받는 함수
-const handleGetValue = (todoList, inputText) => (e) => {
+const handleGetValue = (inputText, savedTodos) => (e) => {
   const todoUlList = document.getElementById("list");
 
   const value = e.target.previousElementSibling.value;
 
-  insertInputValue(value, todoList, todoUlList);
+  insertInputValue(value, todoUlList, savedTodos);
 
   inputText.value = "";
   inputText.focus();
@@ -73,10 +74,10 @@ const createList = () => {
 
 // checkbox가 check될 시 호출되는 핸들러 함수
 // checkbox의 checked값을 todoList배열의 요소인 객체의 done프로퍼티 값으로 대입
-const handleToggleTodo = (id, todoList, todoUlList) => (e) => {
+const handleToggleTodo = (id, savedTodos, todoUlList) => (e) => {
   const { checked } = e.target;
 
-  const nextTodos = todoList.map((todo) => {
+  const nextTodos = savedTodos.map((todo) => {
     if (todo.id === id) {
       todo.done = checked;
     }
@@ -84,20 +85,21 @@ const handleToggleTodo = (id, todoList, todoUlList) => (e) => {
     return todo;
   });
 
-  todoList = nextTodos;
+  savedTodos = nextTodos;
+  localStorage.setItem("savedTodos", JSON.stringify(savedTodos));
 
-  printTodos(todoList, todoUlList);
+  printTodos(savedTodos, todoUlList);
 };
 
 // checkbox요소 생성
-const createCheckBox = (done, id, todoList, todoUlList) => {
+const createCheckBox = (done, id, savedTodos, todoUlList) => {
   const checkBox = document.createElement("input");
   checkBox.setAttribute("type", "checkbox");
   checkBox.checked = done;
 
   checkBox.addEventListener(
     "change",
-    handleToggleTodo(id, todoList, todoUlList)
+    handleToggleTodo(id, savedTodos, todoUlList)
   );
 
   return checkBox;
@@ -124,31 +126,35 @@ const createText = (text, done) => {
 
 // 삭제 버튼 클릭시 호출되어 해당 todo의 출력 데이터를 가진 todoList의 요소인 객체를
 // 삭제 후 화면에 다시 출력하는 이벤트 핸들러
-const hadleRemoveTodo = (id, todoList, todoUlList) => (e) => {
-  const nextTodos = todoList.filter((todo) => todo.id !== id);
+const hadleRemoveTodo = (id, savedTodos, todoUlList) => (e) => {
+  const nextTodos = savedTodos.filter((todo) => todo.id !== id);
 
-  todoList = nextTodos;
+  savedTodos = nextTodos;
+  localStorage.setItem("savedTodos", JSON.stringify(savedTodos));
 
-  printTodos(todoList, todoUlList);
+  printTodos(savedTodos, todoUlList);
 };
 
 // 삭제 button요소 생성
-const createBtn = (id, todoList, todoUlList) => {
+const createBtn = (id, savedTodos, todoUlList) => {
   const button = document.createElement("button");
   button.textContent = "삭제";
-  button.addEventListener("click", hadleRemoveTodo(id, todoList, todoUlList));
+  button.addEventListener(
+    "click",
+    hadleRemoveTodo(id, savedTodos, todoUlList)
+  );
 
   return button;
 };
 
 /* 생성된 요소를 화면에 ul태그에 대입하는 함수 */
-const createElement = (todo, todoUlList, todoList) => {
+const createElement = (todo, todoUlList, savedTodos) => {
   const { text, done, id } = todo;
 
   const list = createList();
-  const checkBox = createCheckBox(done, id, todoList, todoUlList);
+  const checkBox = createCheckBox(done, id, savedTodos, todoUlList);
   const todoText = createText(text, done);
-  const button = createBtn(id, todoList, todoUlList);
+  const button = createBtn(id, savedTodos, todoUlList);
 
   list.append(checkBox, todoText, button);
   todoUlList.appendChild(list);
@@ -160,19 +166,22 @@ const handlePreventFromAction = (e) => {
 };
 
 // Enter키를 누를 시 추가 버튼을 클릭했을 때와 동일하게 동작하는 이벤트 핸들러
-const handleGetKeyPressValue = (todoList, inputText) => (e) => {
+const handleGetKeyPressValue = (savedTodos, inputText) => (e) => {
   if (e.key === "Enter") {
     const todoUlList = document.getElementById("list");
 
     const value = e.target.value;
 
-    insertInputValue(value, todoList, todoUlList);
+    insertInputValue(value, todoUlList, savedTodos);
 
     inputText.value = "";
     inputText.focus();
   }
 };
 
-input.addEventListener("keypress", handleGetKeyPressValue(todoList, input));
-button.addEventListener("click", handleGetValue(todoList, input));
+input.addEventListener(
+  "keypress",
+  handleGetKeyPressValue(savedTodos, input)
+);
+button.addEventListener("click", handleGetValue(input, savedTodos));
 form.addEventListener("submit", handlePreventFromAction);
